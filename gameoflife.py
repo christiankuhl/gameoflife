@@ -5,25 +5,34 @@ import os
 from repl import REPL
 from screen import ScreenPainter
 from game import Game
+from parser import GameParser
 
 class Main(object):
+    """
+    This class contains the main application logic. Entry point for the REPL
+    is run_repl. The rest of the methods serve for dispatching the game's
+    config/control language elements to the various application components.
+    """
     def __init__(self):
         self.screen = ScreenPainter()
         self.state = []
         self.game = Game(screen = self.screen, initial_state = [])
         self.repl = REPL(screen = self.screen)
+        self.parser = GameParser(self)
 
     def run_repl(self):
         self.screen.clear()
         while True:
             try:
                 text = self.repl.prompt()
-            except EOFError:
-                break  # Control-D pressed.
-            self.evaluate_input(text)
-        print('Goodbye!')
+                self.parser.parse(text)
+            except GameOver:
+                break
 
-    def run_game(self):
+    def run(self, *args):
+        if args:
+            self.game = Game.from_file(args[0], screen=self.screen,
+                                       topology = self.topology)
         self.screen.clear()
         os.system("setterm -cursor off")
         try:
@@ -35,49 +44,54 @@ class Main(object):
             self.screen.clear()
             os.system("setterm -cursor on")
 
-    def evaluate_input(self, text):
-        print(text)
-        if text == "run":
-            initial_state = set(random.sample(
-                list(itertools.product(range(self.screen.WIDTH),range(self.screen.HEIGHT))),
-                                                int(self.screen.HEIGHT*self.screen.WIDTH*.25)))
-            self.game = Game(self.screen, initial_state)
-            self.run_game()
+    def quit(self):
+        print("Goodbye!")
+        raise GameOver()
 
-class ArgParser(object):
-    def __init__(self, screen):
-        self.WIDTH, self.HEIGHT = screen.WIDTH, screen.HEIGHT
-    def get_state(self, args):
-        proportion = None
-        initial_state = None
-        try:
-            if args[1].lower() == 'repl':
-                return 'repl'
-            dim = float(args[1])
-            if dim == int(dim):
-                dim = int(dim)
-                initial_state = {(p,q) for p in range(dim) for q in range(dim)}
-            else:
-                proportion = max(min(1., float(args[1])),0.)
-        except ValueError:
-            try:
-                with open(args[1], "r") as file:
-                    initial_state = set()
-                    for (row, line) in enumerate(file):
-                        for (col, char) in enumerate(line):
-                            if char == "*":
-                                initial_state.add((col, row))
-            except:
-                pass
-        except IndexError:
-            initial_state = None
-        if not initial_state:
-            if not proportion:
-                proportion = .25
-            initial_state = set(random.sample(
-                list(itertools.product(range(self.WIDTH),range(self.HEIGHT))),
-                                                int(self.HEIGHT*self.WIDTH*proportion)))
+    exit = quit
+
+    @property
+    def topology(self):
+        return self.game.topology
+    @topology.setter
+    def topology(self, value):
+        self.game.topology = value.strip("'")
+
+    @property
+    def width(self):
+        return self.screen.width
+    @width.setter
+    def width(self, value):
+        self.screen.width = value
+        self.game.width = value
+
+    @property
+    def height(self):
+        return self.screen.height
+    @height.setter
+    def height(self, value):
+        self.screen.height = value
+        self.game.height = value
+
+    @property
+    def state(self):
+        return self.game.living_cells
+    @state.setter
+    def state(self, proportion):
+        self.game.living_cells = state
+
+    def random_state(self):
+        initial_state = set(random.sample(list(itertools.product(
+                                        range(self.width),range(self.height))),
+                                        int(self.height*self.width*proportion)))
         return initial_state
+
+    def block(self, dim):
+        initial_state = {(p,q) for p in range(dim) for q in range(dim)}
+        return initial_state
+
+class GameOver(KeyboardInterrupt):
+    pass
 
 if __name__ == "__main__":
     app = Main()

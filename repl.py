@@ -1,5 +1,9 @@
-import sys
+"""
+This module contains a lexer and other utilities for syntax highlighting,
+autocompletion and autosuggestion for the game's REPL
+"""
 
+import sys
 from prompt_toolkit import prompt, AbortAction
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.contrib.completers import WordCompleter
@@ -10,25 +14,10 @@ from pygments.lexer import words, RegexLexer
 from pygments.token import Token
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number
 from pygments.styles.default import DefaultStyle
-
 from os import listdir
 from os.path import isfile
 from collections import OrderedDict
-
-KEYWORDS = ("run", "load", "save", "insert", "clear")
-PARAMS = ("topology", "width", "height")
-DOMAINS = ('KleinBottle', 'MoebiusBand', 'Torus', 'Cylinder')
-
-class MyLexer(RegexLexer):
-    tokens = {
-        'root': [
-            (r'\s+', Text),
-            (r'\d+[LlUu]*', Number.Integer),
-            (words(KEYWORDS,suffix=r'\b'), Keyword),
-            (words(PARAMS,suffix=r'\b'), Keyword.Reserved),
-            (words(DOMAINS,suffix=r'\b'), Name.Builtin),
-        ],
-    }
+from parser import KEYWORDS, PARAMS, DOMAINS
 
 
 def get_word_list(document, tokens):
@@ -42,6 +31,16 @@ def get_word_list(document, tokens):
         word_list = keywords
     return list(map(str, word_list))
 
+class MyLexer(RegexLexer):
+    tokens = {
+        'root': [
+            (r'\s+', Text),
+            (r'\d+[LlUu]*', Number.Integer),
+            (words(KEYWORDS,suffix=r'\b'), Keyword),
+            (words(PARAMS,suffix=r'\b'), Keyword.Reserved),
+            (words(DOMAINS,suffix=r'\b'), Name.Builtin),
+        ],
+    }
 
 class MyAutoSuggest(AutoSuggest):
     def __init__(self, tokens):
@@ -95,22 +94,28 @@ class REPL(object):
     def __init__(self, screen):
         self.screen = screen
         self.history = FileHistory(".history")
-        self.tokens = {'topology': DynamicTokens(['KleinBottle', 'MoebiusBand', 'Torus', 'Cylinder']),
+        self.tokens = {'topology': DynamicTokens(DOMAINS),
             'run': DynamicTokens(['', self.getfiles]),
             'load': DynamicTokens([self.getfiles]),
             'insert': DynamicTokens([self.getfiles]),
             'height': DynamicTokens([]),
             'width': DynamicTokens([]),
             'save': DynamicTokens([]),
-            'clear': DynamicTokens([])}
+            'clear': DynamicTokens([]),
+            'quit': DynamicTokens([]),
+            'exit': DynamicTokens([])
+            }
         self.autosuggest_tokens = OrderedDict({'run': DynamicTokens(['', self.getfiles]),
-            'topology': DynamicTokens(['KleinBottle', 'MoebiusBand', 'Torus', 'Cylinder']),
+            'topology': DynamicTokens(DOMAINS),
             'load': DynamicTokens([self.getfiles]),
             'insert': DynamicTokens([self.getfiles]),
-            'height': DynamicTokens([self.screen.HEIGHT]),
-            'width': DynamicTokens([self.screen.WIDTH]),
+            'height': DynamicTokens([self.screen.height]),
+            'width': DynamicTokens([self.screen.width]),
             'save': DynamicTokens(['file_name']),
-            'clear': DynamicTokens([])})
+            'clear': DynamicTokens([]),
+            'quit': DynamicTokens([]),
+            'exit': DynamicTokens([])
+            })
         self.meta_dict = {'run': 'run the game',
                      'topology': 'set the topology of the game',
                      'load': 'load an initial state',
@@ -129,4 +134,4 @@ class REPL(object):
                       on_abort=AbortAction.RETRY)
 
     def getfiles(self):
-        return [f for f in listdir('objects/') if isfile('objects/' + f)]
+        return ["'" + f + "'" for f in listdir('objects/') if isfile('objects/' + f)]
