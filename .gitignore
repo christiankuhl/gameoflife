@@ -102,4 +102,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+<<<<<<< HEAD
 s
+=======
+>>>>>>> d44a0b9088d0e04da334f7f4591d89c6e64620d2
