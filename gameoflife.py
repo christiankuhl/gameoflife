@@ -15,7 +15,6 @@ class Main(object):
     """
     def __init__(self):
         self.screen = ScreenPainter()
-        self.state = []
         self.game = Game(screen = self.screen, initial_state = [])
         self.repl = REPL(screen = self.screen)
         self.parser = GameParser(self)
@@ -28,6 +27,9 @@ class Main(object):
                 self.parser.parse(text)
             except GameOver:
                 break
+            except EOFError:
+                break
+        print("Goodbye!")
 
     def run(self, *args):
         if args:
@@ -77,7 +79,7 @@ class Main(object):
     def state(self):
         return self.game.living_cells
     @state.setter
-    def state(self, proportion):
+    def state(self, state):
         self.game.living_cells = state
 
     def random_state(self):
@@ -90,7 +92,7 @@ class Main(object):
         initial_state = {(p,q) for p in range(dim) for q in range(dim)}
         return initial_state
 
-class GameOver(KeyboardInterrupt):
+class GameOver(KeyboardInterrupt, EOFError):
     pass
 
 if __name__ == "__main__":
