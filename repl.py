@@ -19,7 +19,6 @@ from os.path import isfile
 from collections import OrderedDict
 from parser import KEYWORDS, PARAMS, DOMAINS
 
-
 def get_word_list(document, tokens):
     keywords = tokens.keys()
     index = document.find_start_of_previous_word()
@@ -70,6 +69,15 @@ class MyCompleter(Completer):
             if word_matches(a):
                 display_meta = self.meta_dict.get(a, '')
                 yield Completion(a, -len(word_before_cursor), display_meta=display_meta)
+
+    def __call__(self, *args, **kwargs):
+        result = []
+        for item in self:
+            try:
+                result += item(*args, **kwargs)
+            except TypeError:
+                result.append(item)
+        return result
 
 class DynamicTokens(list):
     def __call__(self, *args, **kwargs):
@@ -123,7 +131,9 @@ class REPL(object):
                      'height': 'set screen height',
                      'width': 'set screen width',
                      'save': 'save current state to file',
-                     'clear': 'clear the screen'}
+                     'clear': 'clear the screen',
+                     'quit': 'exit the game',
+                     'exit': 'exit the game'}
         self.completer = MyCompleter(self.tokens, meta_dict = self.meta_dict)
         self.autosuggest = MyAutoSuggest(self.autosuggest_tokens)
 

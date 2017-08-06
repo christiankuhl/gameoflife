@@ -35,16 +35,17 @@ class Main(object):
         if args:
             self.game = Game.from_file(args[0], screen=self.screen,
                                        topology = self.topology)
-        self.screen.clear()
-        os.system("setterm -cursor off")
+        # self.screen.clear()
+        # os.system("setterm -cursor off")
         try:
             while True:
                 self.screen.draw_state(self.game)
                 time.sleep(.1)
                 self.game.next()
         except KeyboardInterrupt:
-            self.screen.clear()
-            os.system("setterm -cursor on")
+            pass
+            # self.screen.clear()
+            # os.system("setterm -cursor on")
 
     def quit(self):
         print("Goodbye!")
@@ -91,6 +92,9 @@ class Main(object):
     def block(self, dim):
         initial_state = {(p,q) for p in range(dim) for q in range(dim)}
         return initial_state
+
+    def clear(self):
+        self.screen.clear()
 
 class GameOver(KeyboardInterrupt, EOFError):
     pass
